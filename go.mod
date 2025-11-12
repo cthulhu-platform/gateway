@@ -1,3 +1,3 @@
 module github.com/cthulhu-platform/gateway
 
-go 1.25.3
+go 1.25.4
