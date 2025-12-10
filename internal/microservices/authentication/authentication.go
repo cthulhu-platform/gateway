@@ -2,6 +2,7 @@ package authentication
 
 import (
 	"fmt"
+
 	"github.com/wagslane/go-rabbitmq"
 )
 
@@ -9,6 +10,7 @@ type AuthenticationConnection interface {
 	Close()
 	GenerateTokens(userID, email, provider string) (*TokenPair, error)
 	ValidateAccessToken(token string) (*Claims, error)
+	ValidateUserID(userID string) (bool, error)
 }
 
 type rmqAuthenticationConnection struct{}
@@ -30,4 +32,9 @@ func (c *rmqAuthenticationConnection) GenerateTokens(userID, email, provider str
 func (c *rmqAuthenticationConnection) ValidateAccessToken(token string) (*Claims, error) {
 	// TODO: Implement RMQ-based token validation
 	return nil, fmt.Errorf("RMQ token validation not implemented")
+}
+
+func (c *rmqAuthenticationConnection) ValidateUserID(userID string) (bool, error) {
+	// TODO: Implement RMQ-based user validation
+	return false, fmt.Errorf("RMQ user validation not implemented")
 }

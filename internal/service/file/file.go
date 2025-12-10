@@ -9,7 +9,7 @@ import (
 )
 
 type FileService interface {
-	UploadFiles(ctx context.Context, files []*multipart.FileHeader) (*filemanager.UploadResult, error)
-	DownloadFile(ctx context.Context, storageID, filename string) (*filemanager.DownloadResult, error)
+	UploadFiles(ctx context.Context, files []*multipart.FileHeader, userID *string) (*filemanager.UploadResult, error)
+	DownloadFile(ctx context.Context, storageID, stringID string) (*filemanager.DownloadResult, error)
 	RetrieveFileBucket(ctx context.Context, storageID string) (*filemanager.BucketMetadata, error)
 }

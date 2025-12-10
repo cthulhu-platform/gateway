@@ -74,10 +74,11 @@ func (c *localFilemanagerConnection) Upload(ctx context.Context, storageID strin
 		}
 
 		fileInfos = append(fileInfos, FileInfo{
-			FileName:    obj.Name,
-			Key:         key,
-			Size:        obj.Size,
-			ContentType: obj.ContentType,
+			OriginalName: obj.Name,
+			StringID:     "", // Not used in old upload flow
+			Key:          key,
+			Size:         obj.Size,
+			ContentType:  obj.ContentType,
 		})
 		totalSize += obj.Size
 	}
@@ -117,9 +118,11 @@ func (c *localFilemanagerConnection) List(ctx context.Context, storageID string)
 		}
 		size := aws.ToInt64(obj.Size)
 		files = append(files, FileInfo{
-			FileName: name,
-			Key:      aws.ToString(obj.Key),
-			Size:     size,
+			OriginalName: name,
+			StringID:     "", // Not available from S3 listing
+			Key:          aws.ToString(obj.Key),
+			Size:         size,
+			ContentType:  "", // Not available from S3 listing
 		})
 		totalSize += size
 	}
@@ -129,6 +132,18 @@ func (c *localFilemanagerConnection) List(ctx context.Context, storageID string)
 		Files:     files,
 		TotalSize: totalSize,
 	}, nil
+}
+
+// UploadSingleObject uploads a single file to S3 using the provided key
+func (c *localFilemanagerConnection) UploadSingleObject(ctx context.Context, storageID, stringID string, obj UploadObject) error {
+	key := fmt.Sprintf("%s/%s", storageID, stringID)
+	_, err := c.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(c.bucket),
+		Key:         aws.String(key),
+		Body:        obj.Body,
+		ContentType: aws.String(obj.ContentType),
+	})
+	return err
 }
 
 func (c *localFilemanagerConnection) Download(ctx context.Context, storageID, filename string) (*DownloadResult, error) {

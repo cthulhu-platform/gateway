@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS files (
     string_id TEXT NOT NULL UNIQUE,  -- Surrogate key stored in DB, used in S3 path (e.g., "hashid1")
     bucket_id TEXT NOT NULL REFERENCES buckets(id) ON DELETE CASCADE,
     original_name TEXT NOT NULL,  -- Original filename (e.g., "test.txt")
-    owner_id TEXT REFERENCES users(id) ON DELETE SET NULL,  -- Nullable owner reference to auth.users
+    owner_id TEXT,  -- Nullable owner reference to users table in auth database (no FK constraint - cross-db)
     size INTEGER NOT NULL,  -- File size in bytes
     content_type TEXT NOT NULL,  -- MIME type
     s3_key TEXT NOT NULL,  -- Full S3 key (e.g., "samplebuck/hashid1")
@@ -31,7 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_files_s3_key ON files(s3_key);
 
 -- Bucket admins table: Many-to-many relationship between users and buckets
 CREATE TABLE IF NOT EXISTS bucket_admins (
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,  -- Reference to users table in auth database (no FK constraint - cross-db)
     bucket_id TEXT NOT NULL REFERENCES buckets(id) ON DELETE CASCADE,
     created_at INTEGER NOT NULL,  -- Unix timestamp
     PRIMARY KEY (user_id, bucket_id)

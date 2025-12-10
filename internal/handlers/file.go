@@ -26,7 +26,13 @@ func FileUpload(s file.FileService) fiber.Handler {
 			})
 		}
 
-		res, err := s.UploadFiles(c.UserContext(), files)
+		// Extract user_id from context (optional, may be nil)
+		var userID *string
+		if uid, ok := c.Locals("user_id").(string); ok && uid != "" {
+			userID = &uid
+		}
+
+		res, err := s.UploadFiles(c.UserContext(), files, userID)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"success": false,
@@ -41,15 +47,15 @@ func FileUpload(s file.FileService) fiber.Handler {
 func DownloadFile(s file.FileService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		storageID := c.Params("id")
-		filename := c.Params("filename")
-		if storageID == "" || filename == "" {
+		stringID := c.Params("filename") // URL param is actually string_id, not filename
+		if storageID == "" || stringID == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"success": false,
-				"error":   "storage id and filename required",
+				"error":   "storage id and string id required",
 			})
 		}
 
-		res, err := s.DownloadFile(c.UserContext(), storageID, filename)
+		res, err := s.DownloadFile(c.UserContext(), storageID, stringID)
 		if err != nil {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"success": false,
@@ -65,6 +71,11 @@ func DownloadFile(s file.FileService) fiber.Handler {
 		c.Set("Content-Type", contentType)
 		if res.ContentLength > 0 {
 			c.Set("Content-Length", fmt.Sprintf("%d", res.ContentLength))
+		}
+		// Use the original filename from the download result
+		filename := res.DownloadedFile
+		if filename == "" {
+			filename = stringID
 		}
 		c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 

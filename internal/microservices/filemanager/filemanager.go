@@ -10,10 +10,11 @@ import (
 
 // FileInfo represents a stored object.
 type FileInfo struct {
-	FileName    string `json:"file_name"`
-	Key         string `json:"key"`
-	Size        int64  `json:"size"`
-	ContentType string `json:"content_type"`
+	OriginalName string `json:"original_name"`
+	StringID     string `json:"string_id"`
+	Key          string `json:"key"`
+	Size         int64  `json:"size"`
+	ContentType  string `json:"content_type"`
 }
 
 // UploadResult is returned after an upload transaction.

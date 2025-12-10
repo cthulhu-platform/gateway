@@ -7,6 +7,7 @@ import (
 	"github.com/cthulhu-platform/common/pkg/env"
 	"github.com/cthulhu-platform/gateway/internal/microservices"
 	"github.com/cthulhu-platform/gateway/internal/pkg"
+	"github.com/cthulhu-platform/gateway/internal/repository/local"
 	"github.com/cthulhu-platform/gateway/internal/server"
 	"github.com/cthulhu-platform/gateway/internal/service/auth"
 	"github.com/cthulhu-platform/gateway/internal/service/diagnose"
@@ -54,8 +55,15 @@ func main() {
 	}
 	defer sc.Shutdown()
 
+	// Create file repository
+	fileRepo, err := local.NewLocalFileRepository()
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize file repository: %v", err))
+	}
+	defer fileRepo.Close()
+
 	// DEPENDENCIES NOW CAN BE INJECTED INTO CONCRETE API SERVICES
-	fileService := file.NewLocalFileService(sc)
+	fileService := file.NewLocalFileService(sc, fileRepo)
 	authService := auth.NewLocalAuthService(sc)
 	diagnoseService := diagnose.NewLocalDiagnoseService(sc)
 

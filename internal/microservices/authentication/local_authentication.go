@@ -7,16 +7,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/cthulhu-platform/gateway/internal/pkg"
 	"github.com/cthulhu-platform/gateway/internal/repository/local"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
 type LocalAuthenticationConnection struct {
-	repo        local.AuthRepository
-	jwtSecret   string
-	accessExpiry time.Duration
+	repo          local.AuthRepository
+	jwtSecret     string
+	accessExpiry  time.Duration
 	refreshExpiry time.Duration
 }
 
@@ -63,7 +63,7 @@ func (c *LocalAuthenticationConnection) GetRepo() local.AuthRepository {
 
 func (c *LocalAuthenticationConnection) GenerateTokens(userID, email, provider string) (*TokenPair, error) {
 	now := time.Now()
-	
+
 	// Generate access token
 	accessClaims := &Claims{
 		UserID:   userID,
@@ -75,24 +75,24 @@ func (c *LocalAuthenticationConnection) GenerateTokens(userID, email, provider s
 			NotBefore: jwt.NewNumericDate(now),
 		},
 	}
-	
+
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
 	accessTokenString, err := accessToken.SignedString([]byte(c.jwtSecret))
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign access token: %w", err)
 	}
-	
+
 	// Generate refresh token (random string, not JWT)
 	refreshTokenBytes := make([]byte, 32)
 	if _, err := rand.Read(refreshTokenBytes); err != nil {
 		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 	refreshToken := hex.EncodeToString(refreshTokenBytes)
-	
+
 	// Hash refresh token for storage
 	hash := sha256.Sum256([]byte(refreshToken))
 	tokenHash := hex.EncodeToString(hash[:])
-	
+
 	// Store refresh token in database
 	refreshTokenID := uuid.New().String()
 	refreshTokenRecord := &local.RefreshToken{
@@ -102,11 +102,11 @@ func (c *LocalAuthenticationConnection) GenerateTokens(userID, email, provider s
 		ExpiresAt: now.Add(c.refreshExpiry).Unix(),
 		CreatedAt: now.Unix(),
 	}
-	
+
 	if err := c.repo.CreateRefreshToken(refreshTokenRecord); err != nil {
 		return nil, fmt.Errorf("failed to store refresh token: %w", err)
 	}
-	
+
 	return &TokenPair{
 		AccessToken:  accessTokenString,
 		RefreshToken: refreshToken,
@@ -115,21 +115,32 @@ func (c *LocalAuthenticationConnection) GenerateTokens(userID, email, provider s
 
 func (c *LocalAuthenticationConnection) ValidateAccessToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
-	
+
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(c.jwtSecret), nil
 	})
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
-	
+
 	if !token.Valid {
 		return nil, fmt.Errorf("invalid token")
 	}
-	
+
 	return claims, nil
+}
+
+func (c *LocalAuthenticationConnection) ValidateUserID(userID string) (bool, error) {
+	if userID == "" {
+		return false, nil
+	}
+	user, err := c.repo.GetUserByID(userID)
+	if err != nil {
+		return false, err
+	}
+	return user != nil, nil
 }
