@@ -8,6 +8,7 @@ import (
 	"github.com/cthulhu-platform/gateway/internal/pkg"
 	"github.com/cthulhu-platform/gateway/internal/server"
 	"github.com/cthulhu-platform/gateway/internal/service/auth"
+	"github.com/cthulhu-platform/gateway/internal/service/diagnose"
 	"github.com/cthulhu-platform/gateway/internal/service/file"
 	"github.com/wagslane/go-rabbitmq"
 )
@@ -18,7 +19,7 @@ func main() {
 
 	// Create RabbitMQ connection
 	connectionString := fmt.Sprintf("amqp://%s:%s@%s",
-		pkg.AMPQ_HOST,
+		pkg.AMPQ_USER,
 		pkg.AMPQ_PASS,
 		pkg.AMPQ_HOST,
 	)
@@ -41,6 +42,7 @@ func main() {
 	// DEPENDENCIES NOW CAN BE INJECTED INTO CONCRETE API SERVICES
 	fileService := file.NewRMQFileService(sc)
 	authService := auth.NewRMQAuthService(sc)
+	diagnoseService := diagnose.NewRMQDiagnoseService(sc)
 
 	// Initialize Server and inject dependencies
 	config := &server.FiberServerConfig{
@@ -52,6 +54,7 @@ func main() {
 		config,
 		fileService,
 		authService,
+		diagnoseService,
 	)
 	s.Start()
 }

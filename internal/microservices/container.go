@@ -15,7 +15,10 @@ type ServiceConnectionContainer struct {
 
 func NewServiceConnectionContainer(ctx context.Context, conn *rabbitmq.Conn) (*ServiceConnectionContainer, error) {
 	fm := filemanager.NewRMQFilemanagerConn(conn)
-	auth := authentication.NewRMQAuthenticationConn(conn)
+	auth, err := authentication.NewRMQAuthenticationConn(conn)
+	if err != nil {
+		return nil, err
+	}
 
 	container := &ServiceConnectionContainer{
 		Filemanager:    fm,
@@ -26,4 +29,7 @@ func NewServiceConnectionContainer(ctx context.Context, conn *rabbitmq.Conn) (*S
 }
 
 func (c *ServiceConnectionContainer) Shutdown() {
+	if authConn, ok := c.Authentication.(interface{ Close() }); ok {
+		authConn.Close()
+	}
 }
