@@ -11,7 +11,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-//go:embed sql/schema.sql
+//go:embed sql/auth/schema.sql
 var schemaFS embed.FS
 
 type AuthRepository interface {
@@ -61,7 +61,7 @@ func NewLocalAuthRepository() (*localAuthRepository, error) {
 	}
 
 	// Initialize schema
-	schema, err := schemaFS.ReadFile("sql/schema.sql")
+	schema, err := schemaFS.ReadFile("sql/auth/schema.sql")
 	if err != nil {
 		db.Close()
 		return nil, err
