@@ -19,4 +19,9 @@ var (
 	AMPQ_HOST  = env.GetEnv("AMQP_HOST", "localhost")
 	AMPQ_PORT  = env.GetEnv("AMQP_PORT", "5672")
 	AMPQ_VHOST = env.GetEnv("AMQP_VHOST", "/")
+
+	// Local config
+	LOCAL_AUTH_REPO    = env.GetEnv("LOCAL_REPO_LOC", "./db/auth.db")
+	LOCAL_FILE_REPO    = env.GetEnv("LOCAL_FILE_REPO", "./db/file.db")
+	LOCAL_GATEWAY_REPO = env.GetEnv("LOCAL_GATEWAY_REPO", "./db/gateway.db")
 )

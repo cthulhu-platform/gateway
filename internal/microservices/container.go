@@ -15,6 +15,29 @@ type ServiceConnectionContainer struct {
 	Diagnose       diagnose.DiagnoseConnection
 }
 
+func NewLocalServiceConnectionContainer(ctx context.Context) (*ServiceConnectionContainer, error) {
+	fm, err := filemanager.NewLocalFilemanagerConnection()
+	if err != nil {
+		return nil, err
+	}
+	auth, err := authentication.NewLocalAuthConnection()
+	if err != nil {
+		return nil, err
+	}
+	diag, err := diagnose.NewLocalDiagnoseConnection()
+	if err != nil {
+		return nil, err
+	}
+
+	container := &ServiceConnectionContainer{
+		Filemanager:    fm,
+		Authentication: auth,
+		Diagnose:       diag,
+	}
+
+	return container, nil
+}
+
 func NewServiceConnectionContainer(ctx context.Context, conn *rabbitmq.Conn) (*ServiceConnectionContainer, error) {
 	fm := filemanager.NewRMQFilemanagerConn(conn)
 	auth, err := authentication.NewRMQAuthenticationConn(conn)

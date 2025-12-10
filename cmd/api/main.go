@@ -40,16 +40,16 @@ func main() {
 	}
 	defer conn.Close()
 
-	sc, err := microservices.NewServiceConnectionContainer(ctx, conn)
+	sc, err := microservices.NewLocalServiceConnectionContainer(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize service container: %v", err))
 	}
 	defer sc.Shutdown()
 
 	// DEPENDENCIES NOW CAN BE INJECTED INTO CONCRETE API SERVICES
-	fileService := file.NewRMQFileService(sc)
-	authService := auth.NewRMQAuthService(sc)
-	diagnoseService := diagnose.NewRMQDiagnoseService(sc)
+	fileService := file.NewLocalFileService(sc)
+	authService := auth.NewLocalAuthService(sc)
+	diagnoseService := diagnose.NewLocalDiagnoseService(sc)
 
 	// Initialize Server and inject dependencies
 	config := &server.FiberServerConfig{
