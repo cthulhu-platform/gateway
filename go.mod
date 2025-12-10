@@ -8,7 +8,7 @@ require (
 	github.com/samber/slog-fiber v1.19.0
 )
 
-replace github.com/cthulhu-platform/common => ../../common/MAIN
+replace github.com/cthulhu-platform/common => ../../common
 
 require (
 	github.com/andybalholm/brotli v1.1.1 // indirect
