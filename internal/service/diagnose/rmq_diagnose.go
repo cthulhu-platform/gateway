@@ -36,8 +36,8 @@ func (s *rmqDiagnoseService) ServiceFanoutTest() (string, error) {
 		return "", fmt.Errorf("failed to marshal message: %w", err)
 	}
 
-	// Publish message to the exchange through the authentication connection
-	if err := s.conns.Authentication.PublishDiagnose(messageBody); err != nil {
+	// Publish message to the exchange through the diagnose connection
+	if err := s.conns.Diagnose.PublishDiagnose(messageBody); err != nil {
 		return "", fmt.Errorf("failed to publish message: %w", err)
 	}
 

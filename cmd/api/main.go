@@ -10,6 +10,7 @@ import (
 	"github.com/cthulhu-platform/gateway/internal/service/auth"
 	"github.com/cthulhu-platform/gateway/internal/service/diagnose"
 	"github.com/cthulhu-platform/gateway/internal/service/file"
+	"github.com/rabbitmq/amqp091-go"
 	"github.com/wagslane/go-rabbitmq"
 )
 
@@ -17,21 +18,27 @@ func main() {
 	// Depency Initialization (RabbitMQ conn, DB conn, SLogger)
 	ctx := context.Background()
 
-	// Create RabbitMQ connection
-	connectionString := fmt.Sprintf("amqp://%s:%s@%s",
+	// Create RabbitMQ connection with labeled connection name
+	connectionString := fmt.Sprintf("amqp://%s:%s@%s:%s%s",
 		pkg.AMPQ_USER,
 		pkg.AMPQ_PASS,
 		pkg.AMPQ_HOST,
+		pkg.AMPQ_PORT,
+		pkg.AMPQ_VHOST,
 	)
 	conn, err := rabbitmq.NewConn(
 		connectionString,
 		rabbitmq.WithConnectionOptionsLogging,
+		rabbitmq.WithConnectionOptionsConfig(rabbitmq.Config{
+			Properties: amqp091.Table{
+				"connection_name": "gateway",
+			},
+		}),
 	)
-
-	// Create DB connection and migrate
-	// Create connection
-
-	// TODO: Migration here
+	if err != nil {
+		panic(fmt.Sprintf("failed to connect to RabbitMQ: %v", err))
+	}
+	defer conn.Close()
 
 	sc, err := microservices.NewServiceConnectionContainer(ctx, conn)
 	if err != nil {

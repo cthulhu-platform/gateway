@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/cthulhu-platform/gateway/internal/microservices/authentication"
+	"github.com/cthulhu-platform/gateway/internal/microservices/diagnose"
 	"github.com/cthulhu-platform/gateway/internal/microservices/filemanager"
 	"github.com/wagslane/go-rabbitmq"
 )
@@ -11,6 +12,7 @@ import (
 type ServiceConnectionContainer struct {
 	Filemanager    filemanager.FilemanagerConnection
 	Authentication authentication.AuthenticationConnection
+	Diagnose       diagnose.DiagnoseConnection
 }
 
 func NewServiceConnectionContainer(ctx context.Context, conn *rabbitmq.Conn) (*ServiceConnectionContainer, error) {
@@ -19,10 +21,15 @@ func NewServiceConnectionContainer(ctx context.Context, conn *rabbitmq.Conn) (*S
 	if err != nil {
 		return nil, err
 	}
+	diag, err := diagnose.NewRMQDiagnoseConn(conn)
+	if err != nil {
+		return nil, err
+	}
 
 	container := &ServiceConnectionContainer{
 		Filemanager:    fm,
 		Authentication: auth,
+		Diagnose:       diag,
 	}
 
 	return container, nil
@@ -31,5 +38,8 @@ func NewServiceConnectionContainer(ctx context.Context, conn *rabbitmq.Conn) (*S
 func (c *ServiceConnectionContainer) Shutdown() {
 	if authConn, ok := c.Authentication.(interface{ Close() }); ok {
 		authConn.Close()
+	}
+	if diagConn, ok := c.Diagnose.(interface{ Close() }); ok {
+		diagConn.Close()
 	}
 }
