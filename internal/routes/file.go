@@ -9,5 +9,5 @@ import (
 func FileRouter(app fiber.Router, fileService file.FileService) {
 	app.Post("/files/upload", handlers.FileUpload(fileService))
 	app.Get("/files/s/:id", handlers.RetrieveFileBucket(fileService))
-	app.Get("/files/s/:id/d/:filename", handlers.RetrieveFileBucket(fileService))
+	app.Get("/files/s/:id/d/:filename", handlers.DownloadFile(fileService))
 }
