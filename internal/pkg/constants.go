@@ -26,5 +26,12 @@ var (
 	LOCAL_GATEWAY_REPO = env.GetEnv("LOCAL_GATEWAY_REPO", "./db/gateway.db")
 
 	// SECRETS
-	GITHUB_CLIENT_ID = env.GetEnv("GITHUB_CLIENT_ID", "")
+	GITHUB_CLIENT_ID     = env.GetEnv("GITHUB_CLIENT_ID", "")
+	GITHUB_CLIENT_SECRET = env.GetEnv("GITHUB_CLIENT_SECRET", "")
+	GITHUB_REDIRECT_URI  = env.GetEnv("GITHUB_REDIRECT_URI", "http://localhost:7777/auth/oauth/github/callback")
+	
+	// JWT Config
+	JWT_SECRET       = env.GetEnv("JWT_SECRET", "")
+	JWT_ACCESS_EXPIRY  = env.GetEnv("JWT_ACCESS_EXPIRY", "15m")
+	JWT_REFRESH_EXPIRY = env.GetEnv("JWT_REFRESH_EXPIRY", "168h") // 7 days
 )
