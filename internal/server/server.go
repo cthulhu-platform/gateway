@@ -9,7 +9,8 @@ import (
 
 	"github.com/cthulhu-platform/gateway/internal/pkg"
 	"github.com/cthulhu-platform/gateway/internal/routes"
-	"github.com/cthulhu-platform/gateway/internal/service"
+	"github.com/cthulhu-platform/gateway/internal/service/auth"
+	"github.com/cthulhu-platform/gateway/internal/service/file"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -22,15 +23,21 @@ type FiberServerConfig struct {
 }
 
 type FiberServer struct {
-	Config   *FiberServerConfig
-	Services *service.ServiceContainer
+	Config      *FiberServerConfig
+	fileService file.FileService
+	authService auth.AuthService
 }
 
 // NOTE: Inject dependencies here
-func NewFiberServer(c *FiberServerConfig, s *service.ServiceContainer) *FiberServer {
+func NewFiberServer(
+	c *FiberServerConfig,
+	fileService file.FileService,
+	authService auth.AuthService,
+) *FiberServer {
 	return &FiberServer{
-		Config:   c,
-		Services: s,
+		Config:      c,
+		fileService: fileService,
+		authService: authService,
 	}
 }
 
@@ -55,7 +62,7 @@ func (s *FiberServer) Start() {
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, world")
 	})
-	routes.FileRouter(app, s.Services)
+	routes.FileRouter(app, s.fileService)
 
 	// Graceful shutdown
 	c := make(chan os.Signal, 1)

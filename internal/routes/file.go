@@ -2,12 +2,12 @@ package routes
 
 import (
 	"github.com/cthulhu-platform/gateway/internal/handlers"
-	"github.com/cthulhu-platform/gateway/internal/service"
+	"github.com/cthulhu-platform/gateway/internal/service/file"
 	"github.com/gofiber/fiber/v2"
 )
 
-func FileRouter(app fiber.Router, services *service.ServiceContainer) {
-	app.Post("/files/upload", handlers.FileUpload(services))
-	app.Get("/files/s/:id", handlers.RetrieveFileBucket(services))
-	app.Get("/files/s/:id/d/:filename", handlers.RetrieveFileBucket(services))
+func FileRouter(app fiber.Router, fileService file.FileService) {
+	app.Post("/files/upload", handlers.FileUpload(fileService))
+	app.Get("/files/s/:id", handlers.RetrieveFileBucket(fileService))
+	app.Get("/files/s/:id/d/:filename", handlers.RetrieveFileBucket(fileService))
 }

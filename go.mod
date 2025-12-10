@@ -6,6 +6,7 @@ require (
 	github.com/cthulhu-platform/common v0.0.0
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/samber/slog-fiber v1.19.0
+	github.com/wagslane/go-rabbitmq v0.15.0
 )
 
 replace github.com/cthulhu-platform/common => ../../common
@@ -18,6 +19,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/rabbitmq/amqp091-go v1.10.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.59.0 // indirect
