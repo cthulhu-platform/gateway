@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"math/rand/v2"
 	"mime/multipart"
@@ -27,7 +28,7 @@ func NewLocalFileService(conns *microservices.ServiceConnectionContainer, fileRe
 	}
 }
 
-func (s *localFileService) UploadFiles(ctx context.Context, files []*multipart.FileHeader, userID *string) (*filemanager.UploadResult, error) {
+func (s *localFileService) UploadFiles(ctx context.Context, files []*multipart.FileHeader, userID *string, password *string) (*filemanager.UploadResult, error) {
 	if len(files) == 0 {
 		return nil, errors.New("no files provided")
 	}
@@ -65,12 +66,24 @@ func (s *localFileService) UploadFiles(ctx context.Context, files []*multipart.F
 		}
 	}
 
+	// Hash password if provided
+	var passwordHash *string
+	if password != nil && *password != "" {
+		hash, err := HashPassword(*password)
+		if err != nil {
+			res.Error = err.Error()
+			return res, fmt.Errorf("failed to hash password: %w", err)
+		}
+		passwordHash = &hash
+	}
+
 	// Create bucket in DB
 	now := time.Now().Unix()
 	bucket := &local.Bucket{
-		ID:        storageID,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:           storageID,
+		PasswordHash: passwordHash,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 	if err := s.fileRepo.CreateBucket(bucket); err != nil {
 		res.Error = err.Error()
@@ -287,6 +300,23 @@ func (s *localFileService) RetrieveFileBucket(ctx context.Context, storageID str
 		Files:     files,
 		TotalSize: totalSize,
 	}, nil
+}
+
+func (s *localFileService) IsBucketProtected(ctx context.Context, bucketID string) (bool, *string, error) {
+	if bucketID == "" {
+		return false, nil, errors.New("bucket id is required")
+	}
+
+	bucket, err := s.fileRepo.GetBucketByID(bucketID)
+	if err != nil {
+		return false, nil, err
+	}
+	if bucket == nil {
+		return false, nil, errors.New("bucket not found")
+	}
+
+	isProtected := bucket.PasswordHash != nil && *bucket.PasswordHash != ""
+	return isProtected, bucket.PasswordHash, nil
 }
 
 func (s *localFileService) GetBucketAdmins(ctx context.Context, bucketID string) (*BucketAdminsResponse, error) {

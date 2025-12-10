@@ -26,13 +26,19 @@ func FileUpload(s file.FileService) fiber.Handler {
 			})
 		}
 
+		// Extract password from form data (optional)
+		var password *string
+		if passwordValues := form.Value["password"]; len(passwordValues) > 0 && passwordValues[0] != "" {
+			password = &passwordValues[0]
+		}
+
 		// Extract user_id from context (optional, may be nil)
 		var userID *string
 		if uid, ok := c.Locals("user_id").(string); ok && uid != "" {
 			userID = &uid
 		}
 
-		res, err := s.UploadFiles(c.UserContext(), files, userID)
+		res, err := s.UploadFiles(c.UserContext(), files, userID, password)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"success": false,
@@ -127,5 +133,30 @@ func GetBucketAdmins(s file.FileService) fiber.Handler {
 		}
 
 		return c.JSON(admins)
+	}
+}
+
+func IsProtected(s file.FileService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		storageID := strings.TrimSpace(c.Params("id"))
+		if storageID == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"success": false,
+				"error":   "storage id required",
+			})
+		}
+
+		isProtected, _, err := s.IsBucketProtected(c.UserContext(), storageID)
+		if err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"success": false,
+				"error":   err.Error(),
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"protected": isProtected,
+			"bucket_id": storageID,
+		})
 	}
 }

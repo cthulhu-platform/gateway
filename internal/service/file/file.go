@@ -24,8 +24,9 @@ type BucketAdminsResponse struct {
 }
 
 type FileService interface {
-	UploadFiles(ctx context.Context, files []*multipart.FileHeader, userID *string) (*filemanager.UploadResult, error)
+	UploadFiles(ctx context.Context, files []*multipart.FileHeader, userID *string, password *string) (*filemanager.UploadResult, error)
 	DownloadFile(ctx context.Context, storageID, stringID string) (*filemanager.DownloadResult, error)
 	RetrieveFileBucket(ctx context.Context, storageID string) (*filemanager.BucketMetadata, error)
 	GetBucketAdmins(ctx context.Context, bucketID string) (*BucketAdminsResponse, error)
+	IsBucketProtected(ctx context.Context, bucketID string) (bool, *string, error)
 }

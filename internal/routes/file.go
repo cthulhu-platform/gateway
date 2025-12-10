@@ -11,7 +11,8 @@ import (
 func FileRouter(app fiber.Router, fileService file.FileService, authService auth.AuthService) {
 	// Upload route with optional auth middleware
 	app.Post("/files/upload", middleware.OptionalJWTAuth(authService), handlers.FileUpload(fileService))
-	app.Get("/files/s/:id", handlers.RetrieveFileBucket(fileService))
-	app.Get("/files/s/:id/admins", handlers.GetBucketAdmins(fileService))
-	app.Get("/files/s/:id/d/:filename", handlers.DownloadFile(fileService))
+	app.Get("/files/s/:id", middleware.BucketPasswordAuth(fileService), handlers.RetrieveFileBucket(fileService))
+	app.Get("/files/s/:id/admins", middleware.BucketPasswordAuth(fileService), handlers.GetBucketAdmins(fileService))
+	app.Get("/files/s/:id/protected", handlers.IsProtected(fileService))
+	app.Get("/files/s/:id/d/:filename", middleware.BucketPasswordAuth(fileService), handlers.DownloadFile(fileService))
 }
