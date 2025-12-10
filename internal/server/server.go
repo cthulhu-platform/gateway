@@ -68,7 +68,7 @@ func (s *FiberServer) Start() {
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, world")
 	})
-	routes.FileRouter(app, s.fileService)
+	routes.FileRouter(app, s.fileService, s.authService)
 	routes.AuthRouter(app, s.authService)
 	routes.DiagnoseRouter(app, s.diagnoseService)
 

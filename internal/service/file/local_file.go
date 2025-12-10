@@ -289,6 +289,103 @@ func (s *localFileService) RetrieveFileBucket(ctx context.Context, storageID str
 	}, nil
 }
 
+func (s *localFileService) GetBucketAdmins(ctx context.Context, bucketID string) (*BucketAdminsResponse, error) {
+	if bucketID == "" {
+		return nil, errors.New("bucket id is required")
+	}
+
+	// Verify bucket exists
+	bucket, err := s.fileRepo.GetBucketByID(bucketID)
+	if err != nil {
+		return nil, err
+	}
+	if bucket == nil {
+		return nil, errors.New("bucket not found")
+	}
+
+	// Get all admins for the bucket
+	admins, err := s.fileRepo.GetBucketAdminsByBucketID(bucketID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(admins) == 0 {
+		return &BucketAdminsResponse{
+			BucketID: bucketID,
+			Owner:    nil,
+			Admins:   []AdminInfo{},
+		}, nil
+	}
+
+	// Determine owner: first admin by created_at (oldest)
+	var ownerAdmin *local.BucketAdmin
+	if len(admins) > 0 {
+		ownerAdmin = admins[0]
+		for _, admin := range admins[1:] {
+			if admin.CreatedAt < ownerAdmin.CreatedAt {
+				ownerAdmin = admin
+			}
+		}
+	}
+
+	// Access auth repository to get user details
+	authConn := s.conns.Authentication
+	if authConn == nil {
+		return nil, errors.New("authentication connection not configured")
+	}
+
+	// Type assert to local connection to access GetRepo
+	type repoGetter interface {
+		GetRepo() local.AuthRepository
+	}
+
+	localAuthConn, ok := authConn.(repoGetter)
+	if !ok {
+		return nil, errors.New("authentication connection does not support repository access")
+	}
+
+	authRepo := localAuthConn.GetRepo()
+
+	// Build admin info list with user details
+	adminInfos := make([]AdminInfo, 0, len(admins))
+	var ownerInfo *AdminInfo
+
+	for _, admin := range admins {
+		// Fetch user details
+		user, err := authRepo.GetUserByID(admin.UserID)
+		if err != nil {
+			// If user not found, skip or use minimal info
+			continue
+		}
+		if user == nil {
+			continue
+		}
+
+		isOwner := ownerAdmin != nil && admin.UserID == ownerAdmin.UserID && admin.CreatedAt == ownerAdmin.CreatedAt
+
+		adminInfo := AdminInfo{
+			UserID:    admin.UserID,
+			Email:     user.Email,
+			Username:  user.Username,
+			AvatarURL: user.AvatarURL,
+			IsOwner:   isOwner,
+			CreatedAt: admin.CreatedAt,
+		}
+
+		if isOwner {
+			ownerInfo = &adminInfo
+		}
+
+		adminInfos = append(adminInfos, adminInfo)
+	}
+
+	return &BucketAdminsResponse{
+		BucketID: bucketID,
+		Owner:    ownerInfo,
+		Admins:   adminInfos,
+	}, nil
+}
+
 func (s *localFileService) filemanager() filemanager.FilemanagerConnection {
 	if s == nil || s.conns == nil {
 		return nil

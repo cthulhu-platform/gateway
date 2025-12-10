@@ -107,3 +107,25 @@ func RetrieveFileBucket(s file.FileService) fiber.Handler {
 		return c.JSON(meta)
 	}
 }
+
+func GetBucketAdmins(s file.FileService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		storageID := strings.TrimSpace(c.Params("id"))
+		if storageID == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"success": false,
+				"error":   "storage id required",
+			})
+		}
+
+		admins, err := s.GetBucketAdmins(c.UserContext(), storageID)
+		if err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"success": false,
+				"error":   err.Error(),
+			})
+		}
+
+		return c.JSON(admins)
+	}
+}
