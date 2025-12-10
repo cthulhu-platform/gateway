@@ -53,6 +53,8 @@ func (s *FiberServer) Start() {
 		BodyLimit: pkg.BODY_LIMIT_MB * 1024 * 1024,
 	})
 
+	slog.Info("secret", "github", pkg.GITHUB_CLIENT_ID)
+
 	// SETUP MIDDLEWARE
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: pkg.CORS_ORIGIN,

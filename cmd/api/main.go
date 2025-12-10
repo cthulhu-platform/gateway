@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cthulhu-platform/common/pkg/env"
 	"github.com/cthulhu-platform/gateway/internal/microservices"
 	"github.com/cthulhu-platform/gateway/internal/pkg"
 	"github.com/cthulhu-platform/gateway/internal/server"
@@ -15,6 +16,13 @@ import (
 )
 
 func main() {
+	// Initialize Viper for environment variable management
+	// Supports .env files and environment variables (including APP_ prefix)
+	if err := env.Init(".env", "./.env", "../.env"); err != nil {
+		// Non-fatal: will fall back to environment variables
+		fmt.Printf("Warning: Could not load .env file: %v\n", err)
+	}
+
 	// Depency Initialization (RabbitMQ conn, DB conn, SLogger)
 	ctx := context.Background()
 

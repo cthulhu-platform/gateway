@@ -24,4 +24,7 @@ var (
 	LOCAL_AUTH_REPO    = env.GetEnv("LOCAL_REPO_LOC", "./db/auth.db")
 	LOCAL_FILE_REPO    = env.GetEnv("LOCAL_FILE_REPO", "./db/file.db")
 	LOCAL_GATEWAY_REPO = env.GetEnv("LOCAL_GATEWAY_REPO", "./db/gateway.db")
+
+	// SECRETS
+	GITHUB_CLIENT_ID = env.GetEnv("GITHUB_CLIENT_ID", "")
 )
