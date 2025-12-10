@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"github.com/cthulhu-platform/gateway/internal/pkg"
 	"github.com/cthulhu-platform/gateway/internal/service/auth"
 	"github.com/gofiber/fiber/v2"
 )
@@ -26,7 +28,9 @@ func OAuthInitiate(s auth.AuthService) fiber.Handler {
 	}
 }
 
-// OAuthCallback handles OAuth callback
+// OAuthCallback handles OAuth callback from GitHub
+// If it's a browser request (from GitHub), redirect to client callback page
+// If it's an API request (from client), exchange code for tokens and return JSON
 func OAuthCallback(s auth.AuthService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		provider := c.Params("provider")
@@ -39,14 +43,26 @@ func OAuthCallback(s auth.AuthService) fiber.Handler {
 			})
 		}
 
-		authResponse, err := s.HandleOAuthCallback(provider, code, state)
-		if err != nil {
-			return c.Status(500).JSON(fiber.Map{
-				"error": err.Error(),
-			})
+		// Check if this is an API request (has Accept: application/json header)
+		// or a browser request (from GitHub redirect)
+		acceptHeader := c.Get("Accept")
+		isAPIRequest := acceptHeader == "application/json" || c.Get("Content-Type") == "application/json"
+
+		if isAPIRequest {
+			// This is an API call from the client to exchange code for tokens
+			authResponse, err := s.HandleOAuthCallback(provider, code, state)
+			if err != nil {
+				return c.Status(500).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+			return c.JSON(authResponse)
 		}
 
-		return c.JSON(authResponse)
+		// This is a browser redirect from GitHub - redirect to client callback page
+		clientCallbackURL := pkg.CORS_ORIGIN + "/signin/callback"
+		redirectURL := fmt.Sprintf("%s?code=%s&state=%s", clientCallbackURL, code, state)
+		return c.Redirect(redirectURL, fiber.StatusFound)
 	}
 }
 

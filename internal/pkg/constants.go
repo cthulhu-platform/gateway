@@ -38,6 +38,7 @@ var (
 	GITHUB_CLIENT_ID     = env.GetEnv("GITHUB_CLIENT_ID", "")
 	GITHUB_CLIENT_SECRET = env.GetEnv("GITHUB_CLIENT_SECRET", "")
 	GITHUB_REDIRECT_URI  = env.GetEnv("GITHUB_REDIRECT_URI", "http://localhost:7777/auth/oauth/github/callback")
+	CLIENT_CALLBACK_URL  = env.GetEnv("CLIENT_CALLBACK_URL", "http://localhost:3000/signin/callback")
 
 	// JWT Config
 	JWT_SECRET         = env.GetEnv("JWT_SECRET", "")
