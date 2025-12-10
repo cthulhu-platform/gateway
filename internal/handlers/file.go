@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cthulhu-platform/gateway/internal/microservices/authentication"
 	"github.com/cthulhu-platform/gateway/internal/service/file"
 	"github.com/gofiber/fiber/v2"
 )
@@ -157,6 +158,65 @@ func IsProtected(s file.FileService) fiber.Handler {
 		return c.JSON(fiber.Map{
 			"protected": isProtected,
 			"bucket_id": storageID,
+		})
+	}
+}
+
+func AuthenticateBucket(s file.FileService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		storageID := strings.TrimSpace(c.Params("id"))
+		if storageID == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"success": false,
+				"error":   "storage id required",
+			})
+		}
+
+		// Extract password from request body
+		var body struct {
+			Password string `json:"password"`
+		}
+		if err := c.BodyParser(&body); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"success": false,
+				"error":   "invalid request body",
+			})
+		}
+
+		if body.Password == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"success": false,
+				"error":   "password is required",
+			})
+		}
+
+		// Extract user_id from context (if authenticated)
+		var userID *string
+		if uid, ok := c.Locals("user_id").(string); ok && uid != "" {
+			userID = &uid
+		}
+
+		// Extract auth token JTI from claims (if available)
+		// JTI is in RegisteredClaims.ID field
+		var authTokenID *string
+		if claims, ok := c.Locals("claims").(*authentication.Claims); ok && claims != nil {
+			if claims.ID != "" {
+				authTokenID = &claims.ID
+			}
+		}
+
+		// Authenticate and get token
+		token, err := s.AuthenticateBucket(c.UserContext(), storageID, body.Password, userID, authTokenID)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"success": false,
+				"error":   err.Error(),
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"access_token": token,
+			"expires_in":   1800, // 30 minutes in seconds
 		})
 	}
 }

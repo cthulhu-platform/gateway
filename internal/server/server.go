@@ -59,7 +59,7 @@ func (s *FiberServer) Start() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: pkg.CORS_ORIGIN,
 		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization, X-Bucket-Password",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization, X-Bucket-Access",
 	}))
 	app.Use(slogfiber.New(logger))
 	app.Use(recover.New())

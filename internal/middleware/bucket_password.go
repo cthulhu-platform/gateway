@@ -1,15 +1,14 @@
 package middleware
 
 import (
+	"github.com/cthulhu-platform/gateway/internal/service/auth"
 	"github.com/cthulhu-platform/gateway/internal/service/file"
 	"github.com/gofiber/fiber/v2"
 )
 
-// Note: VerifyPassword is exported from the file package (password.go)
-// so we can call it directly
-
-// BucketPasswordAuth middleware verifies bucket password if bucket is protected
-func BucketPasswordAuth(fileService file.FileService) fiber.Handler {
+// BucketPasswordAuth middleware verifies bucket access token if bucket is protected
+// X-Bucket-Password is removed for security - only X-Bucket-Access tokens are accepted
+func BucketPasswordAuth(fileService file.FileService, authService auth.AuthService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		storageID := c.Params("id")
 		if storageID == "" {
@@ -20,7 +19,7 @@ func BucketPasswordAuth(fileService file.FileService) fiber.Handler {
 		}
 
 		// Get bucket to check if it's protected
-		isProtected, passwordHash, err := fileService.IsBucketProtected(c.UserContext(), storageID)
+		isProtected, _, err := fileService.IsBucketProtected(c.UserContext(), storageID)
 		if err != nil {
 			return c.Status(404).JSON(fiber.Map{
 				"success": false,
@@ -33,29 +32,54 @@ func BucketPasswordAuth(fileService file.FileService) fiber.Handler {
 			return c.Next()
 		}
 
-		// If protected, verify password
-		providedPassword := c.Get("X-Bucket-Password")
-		if providedPassword == "" {
+		// If protected, require bucket access token
+		accessToken := c.Get("X-Bucket-Access")
+		if accessToken == "" {
 			return c.Status(401).JSON(fiber.Map{
 				"success": false,
-				"error":   "password required for protected bucket",
+				"error":   "bucket access token required",
 			})
 		}
 
-		// Verify password using argon2
-		if !verifyPassword(providedPassword, *passwordHash) {
+		// Validate bucket access token
+		claims, err := file.ValidateBucketAccessToken(accessToken)
+		if err != nil {
 			return c.Status(401).JSON(fiber.Map{
 				"success": false,
-				"error":   "invalid password",
+				"error":   "invalid or expired bucket access token",
 			})
+		}
+
+		// Verify bucket_id matches
+		if claims.BucketID != storageID {
+			return c.Status(401).JSON(fiber.Map{
+				"success": false,
+				"error":   "token bucket_id mismatch",
+			})
+		}
+
+		// Optional: If token has auth_token_id, validate auth token is still valid
+		if claims.AuthTokenID != nil && authService != nil {
+			authHeader := c.Get("Authorization")
+			if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+				authToken := authHeader[7:]
+				authClaims, err := authService.ValidateToken(authToken)
+				if err != nil {
+					return c.Status(401).JSON(fiber.Map{
+						"success": false,
+						"error":   "linked auth token is invalid",
+					})
+				}
+				// Verify JTI matches
+				if authClaims.ID != *claims.AuthTokenID {
+					return c.Status(401).JSON(fiber.Map{
+						"success": false,
+						"error":   "auth token mismatch",
+					})
+				}
+			}
 		}
 
 		return c.Next()
 	}
-}
-
-// verifyPassword verifies a password against a stored hash
-// This calls the exported VerifyPassword function from the file package
-func verifyPassword(password, hash string) bool {
-	return file.VerifyPassword(password, hash)
 }

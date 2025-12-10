@@ -29,4 +29,5 @@ type FileService interface {
 	RetrieveFileBucket(ctx context.Context, storageID string) (*filemanager.BucketMetadata, error)
 	GetBucketAdmins(ctx context.Context, bucketID string) (*BucketAdminsResponse, error)
 	IsBucketProtected(ctx context.Context, bucketID string) (bool, *string, error)
+	AuthenticateBucket(ctx context.Context, bucketID, password string, userID *string, authTokenID *string) (string, error)
 }

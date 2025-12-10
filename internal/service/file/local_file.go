@@ -319,6 +319,43 @@ func (s *localFileService) IsBucketProtected(ctx context.Context, bucketID strin
 	return isProtected, bucket.PasswordHash, nil
 }
 
+func (s *localFileService) AuthenticateBucket(ctx context.Context, bucketID, password string, userID *string, authTokenID *string) (string, error) {
+	if bucketID == "" {
+		return "", errors.New("bucket id is required")
+	}
+	if password == "" {
+		return "", errors.New("password is required")
+	}
+
+	// Get bucket and check if it's protected
+	bucket, err := s.fileRepo.GetBucketByID(bucketID)
+	if err != nil {
+		return "", err
+	}
+	if bucket == nil {
+		return "", errors.New("bucket not found")
+	}
+
+	// Check if bucket is protected
+	if bucket.PasswordHash == nil || *bucket.PasswordHash == "" {
+		return "", errors.New("bucket is not protected")
+	}
+
+	// Verify password
+	if !VerifyPassword(password, *bucket.PasswordHash) {
+		return "", errors.New("invalid password")
+	}
+
+	// Generate bucket access token with read privileges
+	privileges := []string{"read"}
+	token, err := GenerateBucketAccessToken(bucketID, userID, authTokenID, privileges)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate bucket access token: %w", err)
+	}
+
+	return token, nil
+}
+
 func (s *localFileService) GetBucketAdmins(ctx context.Context, bucketID string) (*BucketAdminsResponse, error) {
 	if bucketID == "" {
 		return nil, errors.New("bucket id is required")
