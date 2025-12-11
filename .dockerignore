@@ -1,0 +1,11 @@
+tmp/
+*.db
+*.log
+.git
+.gitignore
+*.md
+testfiles/
+scripts/
+api
+main
+
